@@ -18,6 +18,7 @@ code {
   color: white;
   margin: 1em 0;
   cursor: move;
+  background-color: red;
 }
 
 #bolgeler {
@@ -38,4 +39,39 @@ code {
 #takvim {
   width: 900px;
   margin-left: 500px;
+}
+
+.event-hover{
+  filter: brightness(70%);
+  transition: filter 0.3s ease-in-out;
+}
+.event-hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.event-hover button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.popup-form {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 30px;
+  background-color: pink;
+  border: 1px solid #ccc;
+  z-index: 1000;
 }
