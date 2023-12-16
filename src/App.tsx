@@ -7,6 +7,7 @@ import interactionPlugin, {
 import allLocales from "@fullcalendar/core/locales-all";
 import React, { useEffect, useState } from "react";
 import { EventClickArg } from "@fullcalendar/core";
+import { EventImpl } from "@fullcalendar/core/internal";
 interface MyEvent {
   id: string;
   title: string;
@@ -39,7 +40,7 @@ function App() {
       },
     });
 
-    console.log(events);
+    console.log(events); //debugging
     return () => {
       draggable.destroy();
     };
@@ -56,10 +57,10 @@ function App() {
     }
   };
 
-  const handleEventRemove = (info: EventClickArg) => {
-    info.event.remove();
+  const handleEventRemove = (info: EventImpl) => {
+    info.remove();
     setEvents((prevEvents) =>
-      prevEvents.filter((event) => event.id !== info.event.id)
+      prevEvents.filter((event) => event.id !== info.id)
     );
   };
 
@@ -117,33 +118,52 @@ function App() {
     <>
       <div id="takvim">
         <FullCalendar
+          eventContent={(eventInfo) => {
+            return (
+              <div className="event-wrapper">
+                <div className="event-details">
+                  <div>{eventInfo.timeText}</div>
+                  <div>{eventInfo.event.title}</div>
+                </div>
+                <div className="side-menu-button">
+                  <button
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Şeçili bölgeyi silmek istediğinizden emin misiniz?`
+                        )
+                      ) {
+                        handleEventRemove(eventInfo.event);
+                      }
+                    }}
+                  >
+                    Sil
+                  </button>
+                  <button
+                    onClick={() => {
+                      alert("Random bullshit go!");
+                    }}
+                  >
+                    Düzenle
+                  </button>
+                </div>
+              </div>
+            );
+          }}
           headerToolbar={{
             start: "title",
             end: "",
           }}
-          eventMouseEnter={(info) => {
-            info.el.classList.add("event-hover");
-            const button = document.createElement("button");
-            button.innerText = "Click!";
-
-            info.el.appendChild(button);
-          }}
-          eventMouseLeave={(info) => {
-            info.el.classList.remove("event-hover");
-            const button = info.el.querySelector("button");
-            if (button) {
-              button.remove();
-            }
-          }}
           windowResizeDelay={100}
           handleWindowResize={true}
-          height={650}
+      
           plugins={[timeGridPlugin, interactionPlugin]}
           slotLabelFormat={{
             hour: "2-digit",
             minute: "2-digit",
           }}
           slotDuration={"00:15:00"}
+          selectable = {true}
           editable={true}
           droppable={true}
           allDaySlot={false}
@@ -155,15 +175,6 @@ function App() {
           locale={"tr"}
           events={{ events }}
           drop={(info) => handleEventDrop(info)}
-          eventClick={(info) => {
-            if (
-              window.confirm(
-                `Are you sure you want to delete the event '${info.event.id}'?`
-              )
-            ) {
-              handleEventRemove(info);
-            }
-          }}
         />
       </div>
 
