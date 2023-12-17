@@ -6,8 +6,10 @@ import interactionPlugin, {
 } from "@fullcalendar/interaction";
 import allLocales from "@fullcalendar/core/locales-all";
 import React, { useEffect, useState } from "react";
-import { EventClickArg } from "@fullcalendar/core";
 import { EventImpl } from "@fullcalendar/core/internal";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
+
 interface MyEvent {
   id: string;
   title: string;
@@ -19,7 +21,22 @@ interface MyEvent {
 function App() {
   const [events, setEvents] = useState<MyEvent[]>([]);
   const [newEvent, setNewEvent] = useState<MyEvent>();
+  const [anyArea, setAnyArea] = useState<boolean>(false);
   const [formVisibility, setFormVisibility] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFormVisibility(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, []);
 
   useEffect(() => {
     const containerEl = document.querySelector("#bolgeler") as HTMLElement;
@@ -85,13 +102,13 @@ function App() {
       });
     }
   };
-
   const handleAddNewRegion = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const bolgelerDiv = document.getElementById("bolgeler");
 
     if (bolgelerDiv) {
+      setAnyArea(true);
       const yeniBolge = document.createElement("div");
 
       const yeniBolgeIsim = document.getElementById(
@@ -112,7 +129,13 @@ function App() {
       yeniBolgeRenk.value = "";
 
       setFormVisibility(false);
+    } else {
+      setAnyArea(false);
     }
+  };
+
+  const AlertFunc = () => {
+    alert("Merhaba");
   };
   return (
     <>
@@ -125,8 +148,10 @@ function App() {
                   <div>{eventInfo.timeText}</div>
                   <div>{eventInfo.event.title}</div>
                 </div>
-                <div className="side-menu-button">
+
+                <div>
                   <button
+                    id="event-delete-button"
                     onClick={() => {
                       if (
                         window.confirm(
@@ -137,14 +162,7 @@ function App() {
                       }
                     }}
                   >
-                    Sil
-                  </button>
-                  <button
-                    onClick={() => {
-                      alert("Random bullshit go!");
-                    }}
-                  >
-                    Düzenle
+                    <FontAwesomeIcon icon={faTrash} />
                   </button>
                 </div>
               </div>
@@ -156,14 +174,13 @@ function App() {
           }}
           windowResizeDelay={100}
           handleWindowResize={true}
-      
           plugins={[timeGridPlugin, interactionPlugin]}
           slotLabelFormat={{
             hour: "2-digit",
             minute: "2-digit",
           }}
           slotDuration={"00:15:00"}
-          selectable = {true}
+          selectable={true}
           editable={true}
           droppable={true}
           allDaySlot={false}
@@ -179,26 +196,34 @@ function App() {
       </div>
 
       <div id="bolgeler">
-        <p>
+        <div id="bolge-baslik">
           <strong>Bölgeler</strong>
-        </p>
-        <button id="bolgeEkle" onClick={handleOpenForm}>
-          Yeni
-        </button>
+
+          <button id="bolgeEkle" onClick={handleOpenForm}>
+            <FontAwesomeIcon icon={faPlus} />
+          </button>
+        </div>
+
+        {anyArea || (
+          <p style={{ textAlign: "center" }}> Kayıtlı Bölge Bulunmamaktadır.</p>
+        )}
       </div>
+
       <form
         id="popupform"
         className="popup-form"
-        style={{ display: formVisibility ? "block" : "none" }}
         onSubmit={handleAddNewRegion}
+        style={{ display: formVisibility ? "block" : "none" }}
       >
+        <h2>Yeni Bölge Ekle</h2>
         <label htmlFor="bolgeAdi">Bölge Adı: </label>
-        <input type="text" id="bolgeAdi" name="bolgeAdi" />
-        <br />
+        <input type="text" id="bolgeAdi" name="bolgeAdi" required />
         <label htmlFor="bolgeRenk">Bölge Rengi: </label>
         <input type="color" id="bolgeRenk" name="bolgeRenk" />
-        <br />
         <input type="submit" value="Ekle" />
+        <button type="button" className="close-button" onClick={AlertFunc}>
+          <FontAwesomeIcon icon={faXmark} />
+        </button>
       </form>
     </>
   );
