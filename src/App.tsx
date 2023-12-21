@@ -8,7 +8,9 @@ import allLocales from "@fullcalendar/core/locales-all";
 import React, { useEffect, useState } from "react";
 import { EventImpl } from "@fullcalendar/core/internal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { Button, Dropdown, DropdownButton, Form, Modal } from "react-bootstrap";
+import "../node_modules/bootstrap/dist/css/bootstrap.min.css";
 
 interface MyEvent {
   id: string;
@@ -23,20 +25,8 @@ function App() {
   const [newEvent, setNewEvent] = useState<MyEvent>();
   const [anyArea, setAnyArea] = useState<boolean>(false);
   const [formVisibility, setFormVisibility] = useState<boolean>(false);
-
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setFormVisibility(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, []);
+  const [timeline, setTimeLine] = useState<number>(15);
+  const [timelineForm, setTimelineForm] = useState<boolean>(false);
 
   useEffect(() => {
     const containerEl = document.querySelector("#bolgeler") as HTMLElement;
@@ -81,27 +71,6 @@ function App() {
     );
   };
 
-  const handleOpenForm = () => {
-    const popupButton = document.getElementById("bolgeEkle");
-    const popupForm = document.getElementById("popupform");
-
-    if (popupButton && popupForm) {
-      popupButton.addEventListener("click", (event) => {
-        event.stopPropagation();
-        setFormVisibility(true);
-      });
-
-      window.addEventListener("click", (event) => {
-        if (event.target !== popupButton) {
-          setFormVisibility(false);
-        }
-      });
-
-      popupForm.addEventListener("click", (event) => {
-        event.stopPropagation();
-      });
-    }
-  };
   const handleAddNewRegion = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -133,10 +102,6 @@ function App() {
       setAnyArea(false);
     }
   };
-
-  const AlertFunc = () => {
-    alert("Merhaba");
-  };
   return (
     <>
       <div id="takvim">
@@ -150,8 +115,8 @@ function App() {
                 </div>
 
                 <div>
-                  <button
-                    id="event-delete-button"
+                  <Button
+                    variant="link"
                     onClick={() => {
                       if (
                         window.confirm(
@@ -163,14 +128,14 @@ function App() {
                     }}
                   >
                     <FontAwesomeIcon icon={faTrash} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             );
           }}
           headerToolbar={{
             start: "title",
-            end: "",
+            end: "timelineButton",
           }}
           windowResizeDelay={100}
           handleWindowResize={true}
@@ -179,12 +144,13 @@ function App() {
             hour: "2-digit",
             minute: "2-digit",
           }}
-          slotDuration={"00:15:00"}
+          slotDuration={`00:${timeline}:00 `}
           selectable={true}
           editable={true}
           droppable={true}
           allDaySlot={false}
           forceEventDuration={true}
+          dayHeaderClassNames="calendar-headers"
           dayHeaderFormat={{
             weekday: "long",
           }}
@@ -192,6 +158,14 @@ function App() {
           locale={"tr"}
           events={{ events }}
           drop={(info) => handleEventDrop(info)}
+          customButtons={{
+            timelineButton: {
+              text: "Zaman Aralığı",
+              click: () => {
+                setTimelineForm(!timelineForm);
+              },
+            },
+          }}
         />
       </div>
 
@@ -199,32 +173,80 @@ function App() {
         <div id="bolge-baslik">
           <strong>Bölgeler</strong>
 
-          <button id="bolgeEkle" onClick={handleOpenForm}>
+          <Button
+            size="sm"
+            id="open-form-button"
+            variant="primary"
+            onClick={() => setFormVisibility(!formVisibility)}
+          >
             <FontAwesomeIcon icon={faPlus} />
-          </button>
+          </Button>
         </div>
 
         {anyArea || (
-          <p style={{ textAlign: "center" }}> Kayıtlı Bölge Bulunmamaktadır.</p>
+          <p style={{ textAlign: "center", marginTop: 20 }}>
+            Kayıtlı Bölge Bulunmamaktadır.
+          </p>
         )}
       </div>
-
-      <form
-        id="popupform"
-        className="popup-form"
-        onSubmit={handleAddNewRegion}
-        style={{ display: formVisibility ? "block" : "none" }}
+      <Modal
+        onHide={() => setFormVisibility(!formVisibility)}
+        show={formVisibility}
+        centered
       >
-        <h2>Yeni Bölge Ekle</h2>
-        <label htmlFor="bolgeAdi">Bölge Adı: </label>
-        <input type="text" id="bolgeAdi" name="bolgeAdi" required />
-        <label htmlFor="bolgeRenk">Bölge Rengi: </label>
-        <input type="color" id="bolgeRenk" name="bolgeRenk" />
-        <input type="submit" value="Ekle" />
-        <button type="button" className="close-button" onClick={AlertFunc}>
-          <FontAwesomeIcon icon={faXmark} />
-        </button>
-      </form>
+        <Modal.Header closeButton>
+          <Modal.Title>Yeni Bölge Ekle</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleAddNewRegion}>
+            <Form.Group>
+              <Form.Label>Bölge Adı:</Form.Label>
+              <Form.Control
+                id="bolgeAdi"
+                type="text"
+                placeholder="Bölge adını giriniz"
+                required
+              ></Form.Control>
+            </Form.Group>
+            <Form.Group>
+              <Form.Label>Renk:</Form.Label>
+              <Form.Control type="color" id="bolgeRenk"></Form.Control>
+            </Form.Group>
+            <Button variant="primary" type="submit" id="add-region-button">
+              Ekle
+            </Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      <Modal
+        show={timelineForm}
+        onHide={() => setTimelineForm(!timelineForm)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Yeni Zaman Aralığı Belirleyin</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group>
+              <Form.Label>Değer: {timeline}</Form.Label>
+              <Form.Range
+                defaultValue={timeline}
+                min={10}
+                max={60}
+                onChange={(e) => setTimeLine(parseInt(e.target.value))}
+              ></Form.Range>
+            </Form.Group>
+            <Button
+              id="close-range-form"
+              onClick={() => setTimelineForm(!timelineForm)}
+            >
+              Kapat
+            </Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
     </>
   );
 }
