@@ -59,6 +59,7 @@ code {
 
 
 .event-wrapper {
+  overflow: auto;
   cursor: move;
   display: flex;
   flex-direction: column;
@@ -86,8 +87,9 @@ code {
   
 }
 
-.calendar-headers {
+.fc-col-header-cell-cushion{
   color: black;
+  text-decoration: none;
 }
 
 #close-range-form {

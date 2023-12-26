@@ -5,11 +5,11 @@ import interactionPlugin, {
   DropArg,
 } from "@fullcalendar/interaction";
 import allLocales from "@fullcalendar/core/locales-all";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { EventImpl } from "@fullcalendar/core/internal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { Button, Dropdown, DropdownButton, Form, Modal } from "react-bootstrap";
+import { Button, Form, Modal } from "react-bootstrap";
 import "../node_modules/bootstrap/dist/css/bootstrap.min.css";
 
 interface MyEvent {
@@ -21,12 +21,11 @@ interface MyEvent {
 }
 
 function App() {
-  const [events, setEvents] = useState<MyEvent[]>([]);
-  const [newEvent, setNewEvent] = useState<MyEvent>();
   const [anyArea, setAnyArea] = useState<boolean>(false);
   const [formVisibility, setFormVisibility] = useState<boolean>(false);
   const [timeline, setTimeLine] = useState<number>(15);
   const [timelineForm, setTimelineForm] = useState<boolean>(false);
+  const calendarRef = useRef<FullCalendar>(null);
 
   useEffect(() => {
     const containerEl = document.querySelector("#bolgeler") as HTMLElement;
@@ -42,33 +41,18 @@ function App() {
           endTime: "",
         };
 
-        setNewEvent(event);
         return event;
       },
     });
 
-    console.log(events); //debugging
+  
     return () => {
       draggable.destroy();
     };
-  }, [events]);
-
-  const handleEventDrop = (info: DropArg) => {
-    if (newEvent) {
-      const eventWithDate: MyEvent = {
-        ...newEvent,
-        startTime: info.dateStr,
-      };
-      setEvents((prevEvents) => [...prevEvents, eventWithDate]);
-      setNewEvent(undefined);
-    }
-  };
+  }, []);
 
   const handleEventRemove = (info: EventImpl) => {
     info.remove();
-    setEvents((prevEvents) =>
-      prevEvents.filter((event) => event.id !== info.id)
-    );
   };
 
   const handleAddNewRegion = (event: React.FormEvent<HTMLFormElement>) => {
@@ -102,10 +86,19 @@ function App() {
       setAnyArea(false);
     }
   };
+  const handleUpdateCalendar = () => {
+    if (calendarRef.current) {
+      const getApi = calendarRef.current.getApi();
+      console.log(getApi.getEvents().map((i) => i.toJSON()));
+    } else {
+      console.log("Current yok");
+    }
+  };
   return (
     <>
       <div id="takvim">
         <FullCalendar
+          ref={calendarRef}
           eventContent={(eventInfo) => {
             return (
               <div className="event-wrapper">
@@ -116,6 +109,7 @@ function App() {
 
                 <div>
                   <Button
+                    size="sm"
                     variant="link"
                     onClick={() => {
                       if (
@@ -133,9 +127,10 @@ function App() {
               </div>
             );
           }}
+          // defaultTimedEventDuration={"00:45"}
           headerToolbar={{
             start: "title",
-            end: "timelineButton",
+            end: "updateButton timelineButton",
           }}
           windowResizeDelay={100}
           handleWindowResize={true}
@@ -144,25 +139,28 @@ function App() {
             hour: "2-digit",
             minute: "2-digit",
           }}
-          slotDuration={`00:${timeline}:00 `}
-          selectable={true}
+          slotDuration={`00:${String("0" + timeline).slice(-2)}:00 `}
           editable={true}
           droppable={true}
           allDaySlot={false}
           forceEventDuration={true}
-          dayHeaderClassNames="calendar-headers"
           dayHeaderFormat={{
             weekday: "long",
           }}
           locales={allLocales}
           locale={"tr"}
-          events={{ events }}
-          drop={(info) => handleEventDrop(info)}
+          //events={{ events }}
           customButtons={{
             timelineButton: {
               text: "Zaman Aralığı",
               click: () => {
                 setTimelineForm(!timelineForm);
+              },
+            },
+            updateButton: {
+              text: "Takvim Güncelle",
+              click: () => {
+                handleUpdateCalendar();
               },
             },
           }}
@@ -230,11 +228,11 @@ function App() {
         <Modal.Body>
           <Form>
             <Form.Group>
-              <Form.Label>Değer: {timeline}</Form.Label>
+              <Form.Label>Değer: {timeline} dakika</Form.Label>
               <Form.Range
                 defaultValue={timeline}
-                min={10}
-                max={60}
+                min={5}
+                max={30}
                 onChange={(e) => setTimeLine(parseInt(e.target.value))}
               ></Form.Range>
             </Form.Group>
